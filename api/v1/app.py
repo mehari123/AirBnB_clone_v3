@@ -1,35 +1,36 @@
 #!/usr/bin/python3
-"""
-Sets up Flask application
-
-"""
-
-
-from os import getenv
-from flask import Flask, make_response, jsonify
+''' Runs the web app '''
+from flask import Flask, jsonify, make_response
+from models import storage
+from api.v1.views import app_views
+import os
+from flasgger import Swagger
 from flask_cors import CORS
 
-from api.v1.views import app_views
-from models import storage
-
 app = Flask(__name__)
-CORS(app, orgins='0.0.0.0')
+app.config['JSONIFY_PRETTYPRINT_REGULAR'] = True
+swagger = Swagger(app)
+
 app.register_blueprint(app_views)
+CORS(app, resources={r"/api/*": {"origins": "0.0.0.0"}})
 
 
 @app.errorhandler(404)
-def page_not_found(error):
-    """Returns JSON error repsponse"""
-    return make_response(jsonify({'error': 'Not found'}), 404)
+def not_found(e):
+    '''
+    404  route
+    '''
+    return make_response(jsonify({"error": "Not found"}), 404)
 
 
 @app.teardown_appcontext
-def teardown(self):
-    """Closes storage session"""
+def teardown_app(e):
+    '''
+    teardown app context
+    '''
     storage.close()
 
 
 if __name__ == '__main__':
-    api_host = getenv('HBNB_API_HOST', default='0.0.0.0')
-    api_port = getenv('HBNB_API_PORT', default=5000)
-    app.run(host=api_host, port=int(api_port), threaded=True)
+    app.run(host=os.getenv('HBNB_API_HOST', '0.0.0.0'),
+            port=os.getenv('HBNB_API_PORT', '5000'), threaded=True)
